@@ -438,7 +438,8 @@ class QuoteGenerate {
       topic: nameCanvas ? await drawTopicLine(message.topic, { scale, style, textColor, accent: nameColor, telegram: this.telegram, emojiBrand }) : null,
       groupPos: message.groupPos || 'single',
       isQuote: !!message.isQuote,
-      style
+      style,
+      border: message.border || null
     })
   }
 }

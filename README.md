@@ -77,6 +77,8 @@ Content-Type: `application/json`
 | `height`            | number   | No       | Layout height in px (before scaling).                                                                           |
 | `scale`             | number   | No       | Scaling factor (1–20). Default is `2`.                                                                          |
 | `emojiBrand`        | string   | No       | Emoji brand: `apple` (default), `google`, `twitter`, etc.                                                       |
+| `borderStyle`       | string   | No       | Bubble edge: `none` (default, flat fill), `solid` (1px `borderColor`), `original` (legacy glass hairline).     |
+| `borderColor`       | string   | No       | Border color for `solid` (HEX/CSS, e.g. `"#ff0000"`). Falls back to a theme-aware hairline when omitted.        |
 | `messages`          | array    | Yes      | List of messages (see [Message Object](#message-object)).                                                      |
 
 #### Message Object

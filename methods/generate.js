@@ -228,6 +228,13 @@ module.exports = async (parm) => {
 
   const background = parseBackgroundColor(parm.backgroundColor)
 
+  // Bubble edge stroke: 'none' (default, flat fill) | 'solid' (1px
+  // borderColor) | 'original' (legacy glass hairline). Color is validated
+  // later; keep the raw string here so per-theme fallback still works.
+  const rawBorderStyle = typeof parm.borderStyle === 'string' ? parm.borderStyle.trim().toLowerCase() : 'none'
+  const borderStyle = rawBorderStyle === 'solid' || rawBorderStyle === 'original' ? rawBorderStyle : 'none'
+  const borderColor = typeof parm.borderColor === 'string' && parm.borderColor.trim() ? parm.borderColor.trim() : null
+
   // Normalize all messages first (sync, no I/O)
   const validMessages = parm.messages.filter(Boolean)
   for (const message of validMessages) {
@@ -235,6 +242,13 @@ module.exports = async (parm) => {
     // Style preset ('glass' | 'classic' …) is per request; the renderer reads
     // it per message. Unknown values fall back to the default in styles.js.
     if (parm.style) message.style = String(parm.style)
+    // Per-message override wins, otherwise the request-level border applies.
+    const msgStyle = typeof message.borderStyle === 'string' ? message.borderStyle.trim().toLowerCase() : null
+    const msgColor = typeof message.borderColor === 'string' && message.borderColor.trim() ? message.borderColor.trim() : null
+    message.border = {
+      style: msgStyle === 'solid' || msgStyle === 'original' || msgStyle === 'none' ? msgStyle : borderStyle,
+      color: msgColor || borderColor
+    }
   }
 
   // Same-sender runs render with grouped corners (small radii between

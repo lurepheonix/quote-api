@@ -42,6 +42,53 @@ function bubblePath (ctx, w, h, r, tailSize) {
   ctx.closePath()
 }
 
+// Border styles for the quote bubble / sticker reply chip:
+//   none     — flat fill, no edge stroke (default)
+//   solid    — 1px solid stroke in `borderColor`, clipped inside the path
+//   original — legacy frosted-glass hairline + top highlight
+// `border` is { style, color, width } with width in device px.
+
+function normalizeBorderStyle (style) {
+  const s = String(style || 'none').trim().toLowerCase()
+  if (s === 'solid' || s === 'original' || s === 'none') return s
+  return 'none'
+}
+
+// Validates a CSS color via canvas fillStyle round-trip. Returns the
+// normalized color or null when invalid (caller falls back theme-aware).
+function normalizeBorderColor (color) {
+  if (typeof color !== 'string' || !color.trim()) return null
+  try {
+    const canvas = createCanvas(1, 1)
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = 'rgb(1, 2, 3)'
+    ctx.fillStyle = color.trim()
+    if (ctx.fillStyle === 'rgb(1, 2, 3)' || ctx.fillStyle === '#010203') return null
+    return ctx.fillStyle
+  } catch (e) {
+    return null
+  }
+}
+
+// Theme-aware fallback when style is solid but no (valid) color supplied.
+function defaultBorderColor (textColor) {
+  return textColor === '#000' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.3)'
+}
+
+// Single solid inner border, clipped to the bubble path so it follows the
+// corners and the tail. Stroke is centered on the path; with the clip active
+// only the inner half remains, so double the width (same trick as paintGlass).
+function paintSolidBorder (ctx, w, h, r, tailSize, lw, color) {
+  ctx.save()
+  bubblePath(ctx, w, h, r, tailSize)
+  ctx.clip()
+  bubblePath(ctx, w, h, r, tailSize)
+  ctx.lineWidth = lw * 2
+  ctx.strokeStyle = color
+  ctx.stroke()
+  ctx.restore()
+}
+
 // Frosted-glass finish over the bubble fill: a hairline inner border plus a
 // light top edge that fades out — both clipped to the bubble path so they
 // follow the corners and the tail. `lw` is the hairline width in device px.
@@ -67,7 +114,18 @@ function paintGlass (ctx, w, h, r, tailSize, lw) {
   ctx.restore()
 }
 
-function drawRoundRect (color, w, h, r, tailSize = 0, glassLw = 0) {
+function paintBorder (ctx, w, h, r, tailSize, glassLw, border) {
+  const style = border ? normalizeBorderStyle(border.style) : (glassLw > 0 ? 'original' : 'none')
+  if (style === 'solid') {
+    const color = (border && normalizeBorderColor(border.color)) || (border && border.fallbackColor) || 'rgba(255, 255, 255, 0.3)'
+    const lw = (border && border.width > 0) ? border.width : 1
+    paintSolidBorder(ctx, w, h, r, tailSize, lw, color)
+  } else if (style === 'original' && glassLw > 0) {
+    paintGlass(ctx, w, h, r, tailSize, glassLw)
+  }
+}
+
+function drawRoundRect (color, w, h, r, tailSize = 0, glassLw = 0, border = null) {
   const extraLeft = tailSize > 0 ? Math.ceil(tailSize * 0.8) : 0
   const canvas = createCanvas(w + extraLeft, h)
   const ctx = canvas.getContext('2d')
@@ -75,12 +133,12 @@ function drawRoundRect (color, w, h, r, tailSize = 0, glassLw = 0) {
   ctx.fillStyle = color
   bubblePath(ctx, w, h, r, tailSize)
   ctx.fill()
-  if (glassLw > 0) paintGlass(ctx, w, h, r, tailSize, glassLw)
+  paintBorder(ctx, w, h, r, tailSize, glassLw, border)
   canvas._tailOffset = extraLeft
   return canvas
 }
 
-function drawGradientRoundRect (colorOne, colorTwo, w, h, r, tailSize = 0, glassLw = 0) {
+function drawGradientRoundRect (colorOne, colorTwo, w, h, r, tailSize = 0, glassLw = 0, border = null) {
   const extraLeft = tailSize > 0 ? Math.ceil(tailSize * 0.8) : 0
   const canvas = createCanvas(w + extraLeft, h)
   const ctx = canvas.getContext('2d')
@@ -91,7 +149,7 @@ function drawGradientRoundRect (colorOne, colorTwo, w, h, r, tailSize = 0, glass
   ctx.fillStyle = gradient
   bubblePath(ctx, w, h, r, tailSize)
   ctx.fill()
-  if (glassLw > 0) paintGlass(ctx, w, h, r, tailSize, glassLw)
+  paintBorder(ctx, w, h, r, tailSize, glassLw, border)
   canvas._tailOffset = extraLeft
   return canvas
 }
@@ -264,4 +322,4 @@ function drawForwardLabel (text, fontSize, color) {
   return drawLabel(text, fontSize, color, { bold: true })
 }
 
-module.exports = { drawRoundRect, drawGradientRoundRect, roundImage, drawReplyLine, drawQuoteIcon, drawLabel, drawForwardLabel, inkBounds, capHeight, setOptical }
+module.exports = { drawRoundRect, drawGradientRoundRect, roundImage, drawReplyLine, drawQuoteIcon, drawLabel, drawForwardLabel, inkBounds, capHeight, setOptical, paintGlass, paintSolidBorder, paintBorder, normalizeBorderStyle, normalizeBorderColor, defaultBorderColor }

@@ -10,7 +10,9 @@
 //   groupCorners same-sender neighbours flatten the corners facing each other
 //   avatarAlign  'bottom' (glass, under the tail) | 'top' (classic, first of a run)
 //   shadow       { color, blur, y } drop shadow, or null
-//   glass        hairline + top-edge highlight width in px, 0 = flat fill
+//   glass        hairline + top-edge highlight width in px, 0 = flat fill.
+//                Only painted when the request sets borderStyle 'original';
+//                'none' (default) and 'solid' ignore it.
 //   nameGradient accent gradient on the sender name (else solid color)
 //   replyStyle   'block' tinted rounded accent block | 'line' thin bar, no tint
 //

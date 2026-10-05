@@ -7,7 +7,7 @@
 // themselves from children, and all distances are between visible bounds.
 
 const { createCanvas } = require('canvas')
-const { drawRoundRect, drawGradientRoundRect, roundImage, drawQuoteIcon, drawLabel, drawForwardLabel, setOptical } = require('./canvas-utils')
+const { drawRoundRect, drawGradientRoundRect, roundImage, drawQuoteIcon, drawLabel, drawForwardLabel, setOptical, normalizeBorderStyle, normalizeBorderColor, defaultBorderColor } = require('./canvas-utils')
 const { paintMediaBadges } = require('./attachments')
 const { leaf, box, measure, place, render } = require('./layout-box')
 const { glass } = require('./styles')
@@ -36,7 +36,8 @@ function drawQuote (options) {
     topic, // pre-rendered forum topic line (cards.js drawTopicLine) or null
     groupPos = 'single', // single | first | middle | last — corners facing a same-sender neighbour flatten
     isQuote,
-    style
+    style,
+    border // { style: 'none' | 'solid' | 'original', color } — edge stroke config
   } = options
 
   const P = style || SP
@@ -234,13 +235,22 @@ function drawQuote (options) {
   }
   const tailSize = avatar && P.tail ? s(P.tailSize) : 0
 
+  // Border config for bubble + sticker reply chip:
+  //   none     — flat fill, no edge stroke (default; removes legacy hairline)
+  //   solid    — 1 logical px solid stroke in borderColor (or theme fallback)
+  //   original — legacy glass hairline + top highlight (s(P.glass))
+  const borderStyle = normalizeBorderStyle(border && border.style)
+  const borderColor = (border && normalizeBorderColor(border.color)) || defaultBorderColor(background.textColor || '#fff')
+  const borderOpts = { style: borderStyle, color: borderColor, width: s(1) }
+  const glassLwFor = (style) => style === 'original' ? s(P.glass) : 0
+
   const bubbleBg = (ctx, n) => {
     const one = background.colorOne
     const two = background.colorTwo
-    const glassLw = s(P.glass) // 0 → flat fill
+    const glassLw = glassLwFor(borderStyle)
     const rect = one === two
-      ? drawRoundRect(one, n.w, n.h, radii, tailSize, glassLw)
-      : drawGradientRoundRect(one, two, n.w, n.h, radii, tailSize, glassLw)
+      ? drawRoundRect(one, n.w, n.h, radii, tailSize, glassLw, borderOpts)
+      : drawGradientRoundRect(one, two, n.w, n.h, radii, tailSize, glassLw, borderOpts)
     ctx.save()
     // A soft neutral drop shadow lifts the sticker off any chat wallpaper.
     applyShadow(ctx, P, s)
@@ -260,9 +270,10 @@ function drawQuote (options) {
           const one = background.colorOne
           const two = background.colorTwo
           const r = s(P.chipRadius)
+          const glassLw = glassLwFor(borderStyle)
           const rect = one === two
-            ? drawRoundRect(one, n.w, n.h, r, 0, s(P.glass))
-            : drawGradientRoundRect(one, two, n.w, n.h, r, 0, s(P.glass))
+            ? drawRoundRect(one, n.w, n.h, r, 0, glassLw, borderOpts)
+            : drawGradientRoundRect(one, two, n.w, n.h, r, 0, glassLw, borderOpts)
           ctx.save()
           applyShadow(ctx, P, s)
           ctx.drawImage(rect, n.x, n.y)
