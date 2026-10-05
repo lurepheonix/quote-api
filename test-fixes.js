@@ -91,9 +91,19 @@ async function main () {
     console.log(`  image/${label}: bubble ${bubble.toFixed(0)} vs wallpaper ${wall.toFixed(0)} (Δ${Math.abs(bubble - wall).toFixed(0)})`)
   }
 
+  // 4. Same-sender run shows the sender header (name, via-bot, tag,
+  //    topic) on the FIRST bubble only: an identical message rendered as
+  //    groupPos 'last' must be shorter (no header) than as 'single'.
+  const hello = { from: { id: 1, name: 'Alice' }, text: 'Hello grouped world', avatar: false }
+  const bubbleFirst = await qg.generate('#1b1429', '#1b1429', { ...hello, groupPos: 'single' }, 512, 512, scale, 'apple')
+  const bubbleLast = await qg.generate('#1b1429', '#1b1429', { ...hello, groupPos: 'last' }, 512, 512, scale, 'apple')
+  assert.ok(bubbleLast.height < bubbleFirst.height,
+    `continuation bubble height ${bubbleLast.height} should be < first-bubble ${bubbleFirst.height} (header hidden)`)
+
   console.log('OK: fixes assertions passed')
   console.log(`  avatar ink ratio grouped/ungrouped = ${ratio.toFixed(3)} (≈0.5)`)
   console.log(`  voice bubble width = ${voice.width} (expected ${expectedW}, row ${row.width})`)
+  console.log(`  group header: first-bubble height ${bubbleFirst.height} > continuation ${bubbleLast.height}`)
 }
 
 main().catch((err) => {

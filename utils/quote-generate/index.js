@@ -92,8 +92,12 @@ class QuoteGenerate {
     // the eye lands on the content first.
     const nameSize = style.fonts.name * scale
 
+    // Like Telegram, a same-sender run shows the header (name, via-bot,
+    // sender tag, topic — all gated on nameCanvas in composer.js) on the
+    // FIRST bubble only; continuations render headerless.
+    const isGroupContinuation = message.groupPos === 'middle' || message.groupPos === 'last'
     let nameCanvas
-    if (message.from && message.from.name !== false && (message.from.name || message.from.first_name || message.from.last_name)) {
+    if (!isGroupContinuation && message.from && message.from.name !== false && (message.from.name || message.from.first_name || message.from.last_name)) {
       let name = message.from.name || `${message.from.first_name || ''} ${message.from.last_name || ''}`.trim()
       if (!name) name = 'User'
 
