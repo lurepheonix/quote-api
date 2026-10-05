@@ -372,7 +372,6 @@ module.exports = async (parm) => {
   if (type !== 'image' && type !== 'stories' && canvasQuote.height / scale > 1024) type = 'png'
 
   if (type === 'quote') {
-    const downPadding = 75
     const maxWidth = 512
     const maxHeight = 512
 
@@ -393,6 +392,10 @@ module.exports = async (parm) => {
 
     const canvasImage = await loadImage(await imageQuoteSharp.toBuffer())
 
+    // Small proportional breathing room at the bottom instead of the legacy
+    // fixed 75px strip (which was ~1/3 of a short sticker). 8% of the resized
+    // height, capped at 32px, keeps the Telegram 512px fit without the void.
+    const downPadding = Math.min(32, Math.round(canvasImage.height * 0.08))
     const canvasPadding = createCanvas(canvasImage.width, canvasImage.height + downPadding)
     const canvasPaddingCtx = canvasPadding.getContext('2d')
     canvasPaddingCtx.drawImage(canvasImage, 0, 0)
